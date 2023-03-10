@@ -39,6 +39,8 @@ res <- topTable(fit, coef="phenotypeerlotinib-resistant", number=Inf);
 idx <- match(rownames(res), pData(featureData(gse))$ID);
 res$gene <- pData(featureData(gse))[idx, "Symbol"];
 
+res[res$gene == "AXL", ]
+
 head(res, 100)
 pheno
 x.f["ILMN_1666733", ]
