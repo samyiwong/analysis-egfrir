@@ -22,6 +22,7 @@ dim(x.f)
 
 hist(x.f, breaks=100);
 boxplot(x.f)
+max(x.f)
 
 pheno <- pData(phenoData(gse))[, c("cell line:ch1", "phenotype:ch1")];
 pheno <- clean_colnames(pheno);

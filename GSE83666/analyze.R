@@ -1,5 +1,7 @@
 library(GEOquery)
 
+source("../R/common.R");
+
 gse <- getGEO("GSE83666")[[1]];
 
 x <- exprs(gse);
@@ -12,13 +14,6 @@ summary(x)
 # minimum value appears to be 4.392317 (atypical)
 # left shift x towards 0
 x <- x - min(x); 
-
-filter_undetected <- function(x, expr.cut=0.5, prop.cut = 0.2) {
-	p.detected <- apply(x, 1, function(z) mean(z > expr.cut));
-	x.f <- x[p.detected > prop.cut, ];
-	attr(x.f, "p.detected") <- p.detected;
-	x.f
-}
 
 x.f <- filter_undetected(x);
 
