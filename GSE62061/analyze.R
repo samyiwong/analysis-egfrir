@@ -45,6 +45,7 @@ pheno$group <- factor(pheno$group,
 	levels = c("erlotinib-sensitive", "erlotinib-resistant")
 );
 
+
 # differential gene expression analysis
 
 design <- model.matrix(~ group + cell_line, data = pheno);
@@ -76,11 +77,11 @@ d <- data.frame(
 	x.s
 );
 
-ggplot(d, aes(x = group, y = ILMN_1701877, colour=cell_line)) +
+ggplot(d, aes(x = group, y = ILMN_1701877)) +
 	theme_bw() +
 	geom_jitter(width=0.1)
 
-ggplot(d, aes(x = group, y = ILMN_2188862, colour=cell_line)) +
+ggplot(d, aes(x = group, y = ILMN_1701877, colour=cell_line)) +
 	theme_bw() +
 	geom_jitter(width=0.1)
 
@@ -117,7 +118,8 @@ d <- data.frame(
 	x.s
 );
 
-ggplot(d, aes(x = group, y = ILMN_1701877)) +
+# in one cell line, GDF15 expression is reduced in the resistance group
+ggplot(d, aes(x = group, y = ILMN_2188862, colour=cell_line)) +
 	theme_bw() +
 	geom_jitter(width=0.1)
 
