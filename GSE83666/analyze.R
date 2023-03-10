@@ -1,7 +1,6 @@
 library(GEOquery)
 
-gse <- getGEO("GSE83666");
-gse <- gse[[1]];
+gse <- getGEO("GSE83666")[[1]];
 
 x <- exprs(gse);
 hist(x, breaks=100);
@@ -14,14 +13,14 @@ summary(x)
 # left shift x towards 0
 x <- x - min(x); 
 
-expr.cut <- 0.5;
-prop.cut <- 0.2;
+filter_undetected <- function(x, expr.cut=0.5, prop.cut = 0.2) {
+	p.detected <- apply(x, 1, function(z) mean(z > expr.cut));
+	x.f <- x[p.detected > prop.cut, ];
+	attr(x.f, "p.detected") <- p.detected;
+	x.f
+}
 
-p.detected <- apply(x, 1, function(z) mean(z > expr.cut));
-summary(p.detected)
-hist(p.detected, breaks=50)
-
-x.f <- x[p.detected > prop.cut, ];
+x.f <- filter_undetected(x);
 
 dim(x)
 dim(x.f)
@@ -29,3 +28,7 @@ dim(x.f)
 hist(x.f, breaks=100)
 
 # every few genes are expressed: poor hybridization?
+
+# ---
+
+supp <- getGEOSuppFiles("GSE83666");
