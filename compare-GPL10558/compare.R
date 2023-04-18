@@ -5,6 +5,8 @@ res.g1 <- qread("../GSE49135/GSE49135_limma.rds");
 res.g2 <- qread("../GSE62061/GSE62061_limma.rds");
 
 # match probes so that they are in the same order across studies
+# NB  if comparing across different platforms,
+#     we should match based on ensembl IDs
 probes <- intersect(rownames(res.g1[[1]]), rownames(res.g2[[1]]));
 res.g1.m <- lapply(res.g1, function(res) res[probes, ]);
 res.g2.m <- lapply(res.g2, function(res) res[probes, ]);
