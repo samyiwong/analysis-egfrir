@@ -10,7 +10,7 @@ db <- illuminaHumanv4.db;
 source("../R/common.R");
 
 accession <- "GSE49135";
-out.fn <- filename("GSE49135");
+out.fn <- filename(accession);
 
 gse <- getGEO(accession)[[1]];
 
@@ -40,27 +40,19 @@ max(x.f)
 
 pheno <- pData(phenoData(gse))[, c("cell line:ch1", "phenotype:ch1")];
 pheno <- clean_colnames(pheno);
-pheno$phenotype <- factor(pheno$phenotype,
+pheno$group <- factor(pheno$phenotype,
 	levels = c("Erlotinib sensitive", "Erlotinib resistant"),
 	labels = c("erlotinib-sensitive", "erlotinib-resistant")
 );
+pheno$phenotype <- NULL;
 
-design <- model.matrix( ~ phenotype, data = pheno);
-fit <- lmFit(x.f, design);
-fit <- eBayes(fit);
-res <- topTable(fit, coef="phenotypeerlotinib-resistant", number=Inf);
+# this study only has one cell line
+stopifnot(length(unique(pheno$cell_line)) == 1)
+cell.line <- pheno$cell_line[1];
 
-# map probe id to gene symbol
-res$gene <- mapIds(
-	db, keys=rownames(res), keytype="PROBEID",
-	column="SYMBOL"
-);
-
-# map probe id to ensembl id
-res$ensembl <- mapIds(
-	db, keys=rownames(res), keytype="PROBEID",
-	column="ENSEMBL"
-);
+res <- diff_expr_erlotinib_resistant(x.f, pheno, db);
+res.g <- list(res);
+names(res.g) <- cell.line;
 
 # construct feature data
 probes <- rownames(x.f);
@@ -77,6 +69,9 @@ gse2 <- ExpressionSet(x.f,
 	annotation = annotation(gse)
 );
 
-qwrite(res, insert(out.fn, tag="limma", ext="rds"));
-qwrite(gse2, insert(out.fn, tag="eset", ext="rds"));
+gse.g <- list(gse2);
+names(gse.g) <- cell.line;
+
+qwrite(res.g, insert(out.fn, tag="limma", ext="rds"));
+qwrite(gse.g, insert(out.fn, tag="eset", ext="rds"));
 

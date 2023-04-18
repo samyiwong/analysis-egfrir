@@ -1,15 +1,25 @@
 library(GEOquery)
 library(limma)
 library(ggplot2)
+library(io)
+
+# platform: GPL10558
+#           Illumina HumanHT-12 V4.0 expression beadchip
+library(illuminaHumanv4.db)
+db <- illuminaHumanv4.db;
 
 source("../R/common.R")
 
-gse <- getGEO("GSE62061")[[1]];
+accession <- "GSE62061";
+out.fn <- filename(accession);
+
+gse <- getGEO(accession)[[1]];
 
 x <- exprs(gse);
 hist(x, breaks=100);
 
 min(x)
+# shift towards 0 because x contains negative values
 x <- x - min(x);
 
 x <- log2(x + 1);
@@ -30,6 +40,7 @@ dim(x.f)
 # prepare phenotype data
 
 pheno <- data.frame(
+	row.names = colnames(gse),
 	cell_line = rep(NA, ncol(gse)),
 	group = rep(NA, ncol(gse))
 );
@@ -40,23 +51,55 @@ pheno$cell_line[grep("SCC-25", description)] <- "SCC-25";
 pheno$cell_line[grep("Cal-27", description)] <- "Cal-27";
 pheno$cell_line[grep("FaDu", description)] <- "FaDu";
 pheno$cell_line[grep("SQ20B", description)] <- "SQ20B";
-
 pheno$group <- factor(pheno$group,
 	levels = c("erlotinib-sensitive", "erlotinib-resistant")
 );
 
 
-# differential gene expression analysis
+# differential gene expression analysis for each cell_line
 
-design <- model.matrix(~ group + cell_line, data = pheno);
+pheno.g <- split(pheno, pheno$cell_line);
+x.g <- lapply(pheno.g, function(pheno) x[, rownames(pheno)]);
 
-fit <- lmFit(x, design);
+res.g <- mapply(
+	function(x, pheno) {
+		diff_expr_erlotinib_resistant(x, pheno, db)
+	},
+	x.g, pheno.g,
+	SIMPLIFY=FALSE
+);
+
+probes <- rownames(x.f);
+features <- data.frame(
+	row.names = probes,
+	ensembl = mapIds(db, keys=probes, keytype="PROBEID", column="ENSEMBL"),
+	gene = mapIds(db, keys=probes, keytype="PROBEID", column="SYMBOL")
+);
+
+gse.g <- mapply(
+	function(x, pheno) {
+		ExpressionSet(x,
+			phenoData = AnnotatedDataFrame(pheno),
+			featureData = AnnotatedDataFrame(features),
+			annotation = annotation(gse)
+		)
+	},
+	x.g, pheno.g,
+	SIMPLIFY = FALSE
+);
+
+qwrite(res.g, insert(out.fn, tag="limma", ext="rds"));
+qwrite(gse.g, insert(out.fn, tag="eset", ext="rds"));
+
+# ---
+
+# integrative differential analysis across cell lines
+
+design <- model.matrix(~ cell_line + group, data = pheno);
+
+fit <- lmFit(x.f, design);
 fit <- eBayes(fit);
 res <- topTable(fit, coef="grouperlotinib-resistant", number=Inf);
-head(res)
-
-idx <- match(rownames(res), pData(featureData(gse))$ID);
-res$gene <- pData(featureData(gse))[idx, "Symbol"];
 
 # target false discovery rate
 fdr <- 0.01;
