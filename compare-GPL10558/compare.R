@@ -1,5 +1,6 @@
 library(io)
 
+# two studies were both done on GPL10558
 res.g1 <- qread("../GSE49135/GSE49135_limma.rds");
 res.g2 <- qread("../GSE62061/GSE62061_limma.rds");
 
